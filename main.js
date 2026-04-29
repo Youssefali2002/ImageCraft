@@ -116,32 +116,60 @@ function resetValues() {
     blur.value = 0;
     hueRotate.value = 0;
     updateValueDisplays();
-    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+    
+    // Only draw if canvas has dimensions and image is loaded
+    if (canvas.width > 0 && canvas.height > 0 && img.src && img.complete) {
+        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+    }
 }
 
 window.onload = () => {
     download.style.display = 'none';
     reset.style.display = 'none';
+    
+    // Initialize canvas with default state
+    canvas.style.display = 'none';
+    img.style.display = 'none';
+    
     // Initialize language
     setLanguage(currentLang);
+    
+    // Add mobile touch event listeners
+    upload.addEventListener('touchstart', function(e) {
+        e.preventDefault();
+        this.click();
+    });
+    
+    // Prevent default touch behaviors that might interfere
+    document.addEventListener('touchmove', function(e) {
+        if (e.target === upload || e.target.closest('label[for="upload"]')) {
+            e.preventDefault();
+        }
+    }, { passive: false });
 };
 
 
 upload.onchange = function () {
     const file = upload.files[0];
     
+    // Reset UI state
+    imgbox.classList.remove('has-image');
+    canvas.style.display = 'none';
+    img.style.display = 'none';
+    
     // Validate file
     if (!file) return;
     
-    // Check file type
-    if (!file.type.startsWith('image/')) {
-        alert('Please select an image file');
+    // Check file type - be more permissive for mobile
+    const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp', 'image/bmp'];
+    if (!validTypes.includes(file.type) && !file.type.startsWith('image/')) {
+        alert(currentLang === 'ar' ? 'الرجاء اختيار ملف صورة صالح' : 'Please select a valid image file');
         return;
     }
     
-    // Check file size (max 10MB for mobile)
-    if (file.size > 10 * 1024 * 1024) {
-        alert('Image size should be less than 10MB');
+    // Check file size (max 5MB for better mobile performance)
+    if (file.size > 5 * 1024 * 1024) {
+        alert(currentLang === 'ar' ? 'حجم الصورة يجب أن يكون أقل من 5 ميجابايت' : 'Image size should be less than 5MB');
         return;
     }
 
@@ -150,43 +178,66 @@ upload.onchange = function () {
     reset.style.display = 'flex';
     imgbox.classList.add('has-image');
 
+    // Show loading state
+    if (currentLang === 'ar') {
+        console.log('جاري تحميل الصورة...');
+    } else {
+        console.log('Loading image...');
+    }
+
     let fileReader = new FileReader();
     
     fileReader.onerror = function() {
-        alert('Failed to read the file. Please try again.');
+        imgbox.classList.remove('has-image');
+        alert(currentLang === 'ar' ? 'فشل في قراءة الملف. الرجاء المحاولة مرة أخرى.' : 'Failed to read the file. Please try again.');
         console.error('FileReader error:', fileReader.error);
     };
     
     fileReader.onload = function () {
         img.onerror = function() {
-            alert('Failed to load the image. Please try a different image.');
-            console.error('Image loading error');
             imgbox.classList.remove('has-image');
+            canvas.style.display = 'none';
+            alert(currentLang === 'ar' ? 'فشل في تحميل الصورة. الرجاء تجربة صورة أخرى.' : 'Failed to load the image. Please try a different image.');
+            console.error('Image loading error');
         };
         
         img.onload = function () {
             try {
-                // Ensure canvas dimensions are reasonable for mobile
-                const maxWidth = window.innerWidth < 768 ? window.innerWidth - 40 : 1200;
-                const maxHeight = window.innerHeight < 768 ? window.innerHeight - 200 : 800;
+                // Mobile-optimized dimensions
+                const isMobile = window.innerWidth < 768;
+                const maxWidth = isMobile ? window.innerWidth - 40 : 1200;
+                const maxHeight = isMobile ? window.innerHeight - 300 : 800;
                 
-                let width = img.width;
-                let height = img.height;
+                let width = img.naturalWidth || img.width;
+                let height = img.naturalHeight || img.height;
                 
                 // Scale down large images for mobile performance
                 if (width > maxWidth || height > maxHeight) {
                     const ratio = Math.min(maxWidth / width, maxHeight / height);
-                    width *= ratio;
-                    height *= ratio;
+                    width = Math.floor(width * ratio);
+                    height = Math.floor(height * ratio);
                 }
                 
+                // Set canvas dimensions
                 canvas.width = width;
                 canvas.height = height;
+                
+                // Clear canvas before drawing
+                ctx.clearRect(0, 0, width, height);
+                
+                // Draw image
                 ctx.drawImage(img, 0, 0, width, height);
+                
+                // Show canvas, hide image
                 canvas.style.display = 'block';
                 img.style.display = 'none';
+                
+                console.log('Image loaded successfully:', width + 'x' + height);
+                
             } catch (error) {
-                alert('Failed to process the image. Please try again.');
+                imgbox.classList.remove('has-image');
+                canvas.style.display = 'none';
+                alert(currentLang === 'ar' ? 'فشل في معالجة الصورة. الرجاء المحاولة مرة أخرى.' : 'Failed to process the image. Please try again.');
                 console.error('Canvas drawing error:', error);
             }
         };
@@ -203,16 +254,20 @@ let filters = document.querySelectorAll("ul li input");
 filters.forEach(filter => {
     filter.addEventListener('input', function() {
         updateValueDisplays();
-        ctx.filter = `
-            saturate(${saturation.value}%)
-            contrast(${contrast.value}%)
-            brightness(${brightness.value}%)
-            sepia(${sepia.value}%)
-            grayscale(${grayscale.value}%)
-            blur(${blur.value}px)
-            hue-rotate(${hueRotate.value}deg)
-        `;
-        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+        
+        // Only apply filters if image is loaded and canvas has dimensions
+        if (canvas.width > 0 && canvas.height > 0 && img.src && img.complete) {
+            ctx.filter = `
+                saturate(${saturation.value}%)
+                contrast(${contrast.value}%)
+                brightness(${brightness.value}%)
+                sepia(${sepia.value}%)
+                grayscale(${grayscale.value}%)
+                blur(${blur.value}px)
+                hue-rotate(${hueRotate.value}deg)
+            `;
+            ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+        }
     });
 });
 
