@@ -351,6 +351,8 @@ html[dir="ltr"] .filters ul li label {
     align-items: center;
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
     z-index: 100;
+    justify-content: center;
+    width: 80%;
 }
 
 .author-name {
