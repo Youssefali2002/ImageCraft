@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title data-key="pageTitle">محرر الصور</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <button class="lang-toggle" id="langToggle" title="Change Language">
+        <span id="langText">EN</span>
+    </button>
+    <div class="container">
+        <div class="img-section">
+            <div class="img-box" id="imgBox">
+                <img id="img">
+                <canvas id="canvas"></canvas>
+            </div>
+            <div class="upload">
+                <label for="upload">
+                    <svg class="upload-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                    </svg>
+                    <span data-key="uploadBtn">اختر صورة</span>
+                </label>
+                <input type="file" id="upload" accept="image/*">
+            </div>
+        </div>
+        <div class="filters">
+            <h3 data-key="filtersTitle">الفلاتر</h3>
+            <ul>
+                <li>
+                    <label for="saturation">
+                        <span data-key="saturation">التشبع</span>
+                        <span class="value-display" id="saturation-value">100%</span>
+                    </label>
+                    <input type="range" id="saturation" min="0" max="200" value="100">
+                </li>
+                <li>
+                    <label for="contrast">
+                        <span data-key="contrast">التباين</span>
+                        <span class="value-display" id="contrast-value">100%</span>
+                    </label>
+                    <input type="range" id="contrast" min="0" max="200" value="100">
+                </li>
+                <li>
+                    <label for="brightness">
+                        <span data-key="brightness">السطوع</span>
+                        <span class="value-display" id="brightness-value">100%</span>
+                    </label>
+                    <input type="range" id="brightness" min="0" max="200" value="100">
+                </li>
+                <li>
+                    <label for="sepia">
+                        <span data-key="sepia">اللون البني</span>
+                        <span class="value-display" id="sepia-value">0%</span>
+                    </label>
+                    <input type="range" id="sepia" min="0" max="100" value="0">
+                </li>
+                <li>
+                    <label for="grayscale">
+                        <span data-key="grayscale">التدرج الرمادي</span>
+                        <span class="value-display" id="grayscale-value">0</span>
+                    </label>
+                    <input type="range" id="grayscale" step="0.1" min="0" max="1" value="0">
+                </li>
+                <li>
+                    <label for="blur">
+                        <span data-key="blur">التمويه</span>
+                        <span class="value-display" id="blur-value">0px</span>
+                    </label>
+                    <input type="range" id="blur" step="0.1" min="0" max="10" value="0">
+                </li>
+                <li>
+                    <label for="hue-rotate">
+                        <span data-key="hueRotate">تدوير الألوان</span>
+                        <span class="value-display" id="hue-rotate-value">0°</span>
+                    </label>
+                    <input type="range" id="hue-rotate" min="0" max="350" value="0">
+                </li>
+            </ul>
+            <div class="actions">
+                <a download="image.png" id="download">
+                    <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path>
+                    </svg>
+                    <span data-key="download">تحميل</span>
+                </a>
+                <span id="reset">
+                    <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+                    </svg>
+                    <span data-key="reset">إعادة</span>
+                </span>
+            </div>
+        </div>
+    </div>
+    <footer class="author-footer">
+        <span data-key="madeBy">صنع بواسطة</span>
+        <span class="author-name" data-key="authorName">يوسف ياسر اسماعيل</span>
+    </footer>
+    <script src="main.js"></script>
+</body>
+</html>
