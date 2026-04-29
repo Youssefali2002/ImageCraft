@@ -128,23 +128,73 @@ window.onload = () => {
 
 
 upload.onchange = function () {
+    const file = upload.files[0];
+    
+    // Validate file
+    if (!file) return;
+    
+    // Check file type
+    if (!file.type.startsWith('image/')) {
+        alert('Please select an image file');
+        return;
+    }
+    
+    // Check file size (max 10MB for mobile)
+    if (file.size > 10 * 1024 * 1024) {
+        alert('Image size should be less than 10MB');
+        return;
+    }
+
     resetValues();
     download.style.display = 'flex';
     reset.style.display = 'flex';
     imgbox.classList.add('has-image');
 
-    let file = new FileReader();
-    file.readAsDataURL(upload.files[0]);
-    file.onload = function () {
-        img.src = file.result;
+    let fileReader = new FileReader();
+    
+    fileReader.onerror = function() {
+        alert('Failed to read the file. Please try again.');
+        console.error('FileReader error:', fileReader.error);
     };
-    img.onload = function () {
-        canvas.width = img.width;
-        canvas.height = img.height;
-        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-        canvas.style.display = 'block';
-        img.style.display = 'none';
+    
+    fileReader.onload = function () {
+        img.onerror = function() {
+            alert('Failed to load the image. Please try a different image.');
+            console.error('Image loading error');
+            imgbox.classList.remove('has-image');
+        };
+        
+        img.onload = function () {
+            try {
+                // Ensure canvas dimensions are reasonable for mobile
+                const maxWidth = window.innerWidth < 768 ? window.innerWidth - 40 : 1200;
+                const maxHeight = window.innerHeight < 768 ? window.innerHeight - 200 : 800;
+                
+                let width = img.width;
+                let height = img.height;
+                
+                // Scale down large images for mobile performance
+                if (width > maxWidth || height > maxHeight) {
+                    const ratio = Math.min(maxWidth / width, maxHeight / height);
+                    width *= ratio;
+                    height *= ratio;
+                }
+                
+                canvas.width = width;
+                canvas.height = height;
+                ctx.drawImage(img, 0, 0, width, height);
+                canvas.style.display = 'block';
+                img.style.display = 'none';
+            } catch (error) {
+                alert('Failed to process the image. Please try again.');
+                console.error('Canvas drawing error:', error);
+            }
+        };
+        
+        img.src = fileReader.result;
     };
+    
+    fileReader.readAsDataURL(file);
 };
 
 let filters = document.querySelectorAll("ul li input");
