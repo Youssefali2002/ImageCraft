@@ -1,4 +1,4 @@
-const img = document.getElementById('img');
+    const img = document.getElementById('img');
 const upload = document.getElementById('upload');
 const saturation = document.getElementById('saturation');
 const contrast = document.getElementById('contrast');
@@ -148,7 +148,6 @@ window.onload = () => {
     }, { passive: false });
 };
 
-
 upload.onchange = function () {
     const file = upload.files[0];
     
@@ -167,9 +166,11 @@ upload.onchange = function () {
         return;
     }
     
-    // Check file size (max 5MB for better mobile performance)
-    if (file.size > 5 * 1024 * 1024) {
-        alert(currentLang === 'ar' ? 'حجم الصورة يجب أن يكون أقل من 5 ميجابايت' : 'Image size should be less than 5MB');
+    // Check file size (max 3MB for mobile to prevent memory issues)
+    const maxSize = window.innerWidth < 768 ? 3 * 1024 * 1024 : 5 * 1024 * 1024;
+    if (file.size > maxSize) {
+        const sizeMB = window.innerWidth < 768 ? 3 : 5;
+        alert(currentLang === 'ar' ? `حجم الصورة يجب أن يكون أقل من ${sizeMB} ميجابايت` : `Image size should be less than ${sizeMB}MB`);
         return;
     }
 
@@ -185,71 +186,154 @@ upload.onchange = function () {
         console.log('Loading image...');
     }
 
-    let fileReader = new FileReader();
+    // Use URL.createObjectURL for better mobile performance
+    let objectUrl = null;
     
-    fileReader.onerror = function() {
-        imgbox.classList.remove('has-image');
-        alert(currentLang === 'ar' ? 'فشل في قراءة الملف. الرجاء المحاولة مرة أخرى.' : 'Failed to read the file. Please try again.');
-        console.error('FileReader error:', fileReader.error);
-    };
+    try {
+        // First try FileReader as fallback
+        let fileReader = new FileReader();
+        
+        fileReader.onerror = function() {
+            console.log('FileReader failed, trying URL.createObjectURL...');
+            tryAlternativeMethod();
+        };
+        
+        fileReader.onload = function () {
+            try {
+                loadImageWithSrc(fileReader.result);
+            } catch (error) {
+                console.log('Direct loading failed, trying alternative method...');
+                tryAlternativeMethod();
+            }
+        };
+        
+        fileReader.readAsDataURL(file);
+        
+    } catch (error) {
+        console.error('FileReader creation failed:', error);
+        tryAlternativeMethod();
+    }
     
-    fileReader.onload = function () {
+    function tryAlternativeMethod() {
+        try {
+            // Clean up previous object URL if exists
+            if (objectUrl) {
+                URL.revokeObjectURL(objectUrl);
+            }
+            
+            // Try URL.createObjectURL as alternative
+            objectUrl = URL.createObjectURL(file);
+            loadImageWithSrc(objectUrl);
+            
+        } catch (error) {
+            console.error('Alternative method failed:', error);
+            imgbox.classList.remove('has-image');
+            alert(currentLang === 'ar' ? 'فشل في تحميل الصورة. جرب صورة أخرى.' : 'Failed to load image. Try another image.');
+        }
+    }
+    
+    function loadImageWithSrc(src) {
+        // Reset image element
+        img.onload = null;
+        img.onerror = null;
+        
         img.onerror = function() {
+            console.error('Image loading error with src:', src);
             imgbox.classList.remove('has-image');
             canvas.style.display = 'none';
+            
+            // Clean up object URL if used
+            if (objectUrl && src === objectUrl) {
+                URL.revokeObjectURL(objectUrl);
+                objectUrl = null;
+            }
+            
             alert(currentLang === 'ar' ? 'فشل في تحميل الصورة. الرجاء تجربة صورة أخرى.' : 'Failed to load the image. Please try a different image.');
-            console.error('Image loading error');
         };
         
         img.onload = function () {
             try {
+                console.log('Image loaded, dimensions:', img.naturalWidth + 'x' + img.naturalHeight);
+                
                 // Mobile-optimized dimensions
                 const isMobile = window.innerWidth < 768;
-                const maxWidth = isMobile ? window.innerWidth - 40 : 1200;
-                const maxHeight = isMobile ? window.innerHeight - 300 : 800;
+                const maxWidth = isMobile ? Math.min(window.innerWidth - 40, 800) : 1200;
+                const maxHeight = isMobile ? Math.min(window.innerHeight - 300, 600) : 800;
                 
                 let width = img.naturalWidth || img.width;
                 let height = img.naturalHeight || img.height;
+                
+                // Validate dimensions
+                if (!width || !height || width <= 0 || height <= 0) {
+                    throw new Error('Invalid image dimensions');
+                }
                 
                 // Scale down large images for mobile performance
                 if (width > maxWidth || height > maxHeight) {
                     const ratio = Math.min(maxWidth / width, maxHeight / height);
                     width = Math.floor(width * ratio);
                     height = Math.floor(height * ratio);
+                    console.log('Scaled to:', width + 'x' + height);
                 }
                 
-                // Set canvas dimensions
-                canvas.width = width;
-                canvas.height = height;
-                
-                // Clear canvas before drawing
-                ctx.clearRect(0, 0, width, height);
-                
-                // Draw image
-                ctx.drawImage(img, 0, 0, width, height);
-                
-                // Show canvas, hide image
-                canvas.style.display = 'block';
-                img.style.display = 'none';
-                
-                console.log('Image loaded successfully:', width + 'x' + height);
+                // Set canvas dimensions with validation
+                if (width > 0 && height > 0) {
+                    canvas.width = width;
+                    canvas.height = height;
+                    
+                    // Clear canvas before drawing
+                    ctx.clearRect(0, 0, width, height);
+                    
+                    // Draw image with error handling
+                    try {
+                        ctx.drawImage(img, 0, 0, width, height);
+                    } catch (drawError) {
+                        throw new Error('Canvas drawing failed: ' + drawError.message);
+                    }
+                    
+                    // Show canvas, hide image
+                    canvas.style.display = 'block';
+                    img.style.display = 'none';
+                    
+                    console.log('Image processed successfully:', width + 'x' + height);
+                    
+                    // Clean up object URL if used
+                    if (objectUrl && src === objectUrl) {
+                        URL.revokeObjectURL(objectUrl);
+                        objectUrl = null;
+                    }
+                    
+                } else {
+                    throw new Error('Invalid canvas dimensions');
+                }
                 
             } catch (error) {
+                console.error('Image processing error:', error);
                 imgbox.classList.remove('has-image');
                 canvas.style.display = 'none';
+                
+                // Clean up object URL if used
+                if (objectUrl && src === objectUrl) {
+                    URL.revokeObjectURL(objectUrl);
+                    objectUrl = null;
+                }
+                
                 alert(currentLang === 'ar' ? 'فشل في معالجة الصورة. الرجاء المحاولة مرة أخرى.' : 'Failed to process the image. Please try again.');
-                console.error('Canvas drawing error:', error);
             }
         };
         
-        img.src = fileReader.result;
-    };
-    
-    fileReader.readAsDataURL(file);
+        // Set image source with error handling
+        try {
+            img.src = src;
+        } catch (error) {
+            console.error('Failed to set image src:', error);
+            imgbox.classList.remove('has-image');
+            alert(currentLang === 'ar' ? 'فشل في تحميل الصورة.' : 'Failed to load image.');
+        }
+    }
 };
 
 let filters = document.querySelectorAll("ul li input");
-
 
 filters.forEach(filter => {
     filter.addEventListener('input', function() {
@@ -272,16 +356,16 @@ filters.forEach(filter => {
 });
 
 reset.addEventListener('click', function() {
-  resetValues();
-  });
+    resetValues();
+});
 
-  function downloadImage() {
+function downloadImage() {
     const link = document.createElement('a');
     link.download = 'image.png';
     link.href = canvas.toDataURL();
     link.click();
-  }
+}
 
-  download.addEventListener('click', function() {
+download.addEventListener('click', function() {
     downloadImage();
-  });
+});
